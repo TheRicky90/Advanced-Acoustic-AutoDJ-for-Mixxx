@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<MixxxControllerPreset mixxxVersion="2.3.0+" schemaVersion="1">
+    <info>
+        <name>AutoDJ LoopMIDI</name>
+        <author>Community</author>
+        <description>Script per automazione EQ</description>
+    </info>
+    <controller id="loopMIDI Port">
+        <scriptfiles>
+            <file functionprefix="midiAutoDJ" filename="AutoDJ.js"/>
+        </scriptfiles>
+        <controls/>
+        <outputs/>
+    </controller>
+</MixxxControllerPreset>
