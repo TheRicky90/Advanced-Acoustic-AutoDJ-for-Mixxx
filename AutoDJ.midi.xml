@@ -1,15 +1,153 @@
-<?xml version='1.0' encoding='utf-8'?>
-<MixxxControllerPreset mixxxVersion="2.3.0+" schemaVersion="1">
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+ AutoDJ LoopMIDI - Complete MIDI Mapping Configuration
+ Compatible with Mixxx 2.5.0+ and AutoDJ.js Script v2.1.0
+-->
+<MixxxControllerPreset mixxxVersion="2.5.0+" schemaVersion="1">
     <info>
-        <name>AutoDJ LoopMIDI</name>
+        <name>AutoDJ LoopMIDI - Complete (v2.0)</name>
         <author>Community</author>
-        <description>Script per automazione EQ</description>
+        <description>Full MIDI mappings for complete AutoDJ.js functionality including EQ, Effects, and UV Control integration</description>
     </info>
+    
+    <!-- Main AutoDJ Controller -->
     <controller id="loopMIDI Port">
         <scriptfiles>
             <file functionprefix="midiAutoDJ" filename="AutoDJ.js"/>
         </scriptfiles>
-        <controls/>
+        
+        <!-- ==================== DECK DETECTION MAPPINGS ==================== -->
+        <controls>
+            <!-- Play indicator for both decks (detecting playing state) -->
+            <control id="play_indicator">
+                <mapping type="button" channel="1" note="96"/>
+                <mapping type="button" channel="2" note="97"/>
+            </control>
+            
+            <!-- BPM values from deck metadata -->
+            <control id="file_bpm">
+                <mapping type="midi_cc" channel="0" cc="123"/>
+            </control>
+            
+            <!-- ==================== VU METER MAPPINGS ==================== -->
+            <!-- Left channel VU meter (primary audio level source) -->
+            <control id="vu_meter_left">
+                <mapping type="midi_cc" channel="0" cc="124"/>
+            </control>
+            
+            <!-- Right channel VU meter (fallback/secondary) -->
+            <control id="vu_meter_right">
+                <mapping type="midi_cc" channel="0" cc="125"/>
+            </control>
+            
+            <!-- ==================== POSITION TRACKING ==================== -->
+            <!-- Play position for transition logic -->
+            <control id="playposition">
+                <mapping type="midi_cc" channel="0" cc="126"/>
+            </control>
+            
+            <!-- ==================== MASTER/CROSSFADE CONTROL ==================== -->
+            <!-- Master crossfader position - CRITICAL FOR CROSSFADE LOGIC -->
+            <control id="master_crossfader">
+                <mapping type="knob" channel="0" knob="1"/>
+            </control>
+            
+            <!-- Main VU meter reading for level normalization -->
+            <control id="main_vu_meter">
+                <mapping type="midi_cc" channel="0" cc="127"/>
+            </control>
+            
+            <!-- ==================== DECK CONTROL MAPPINGS ==================== -->
+            <control id="deck1_play_indicator">
+                <mapping type="button" channel="1" note="96"/>
+            </control>
+            
+            <control id="deck2_play_indicator">
+                <mapping type="button" channel="2" note="97"/>
+            </control>
+            
+            <!-- Deck file position tracking -->
+            <control id="deck1_file_position">
+                <mapping type="midi_cc" channel="0" cc="130"/>
+            </control>
+            
+            <control id="deck2_file_position">
+                <mapping type="midi_cc" channel="0" cc="131"/>
+            </control>
+            
+            <!-- ==================== EQ RACK MAPPINGS ==================== -->
+            <!-- Bass EQ Control (Low Frequency) - Channel 1 Effect Unit -->
+            <control id="eq_bass_control">
+                <mapping type="knob" channel="0" knob="2"/>
+            </control>
+            
+            <!-- Mid EQ Control (Mid Frequencies) - Channel 1 Effect Unit -->
+            <control id="eq_mid_control">
+                <mapping type="knob" channel="0" knob="3"/>
+            </control>
+            
+            <!-- High EQ Control (High Frequencies) - Channel 1 Effect Unit -->
+            <control id="eq_high_control">
+                <mapping type="knob" channel="0" knob="4"/>
+            </control>
+            
+            <!-- ==================== EFFECT RACK MAPPINGS ==================== -->
+            <!-- Effect Unit 1: Bass EQ / Filter (Moog Liquid) - Channel 1 -->
+            <control id="EffectUnit1_Effect1">
+                <mapping type="knob" channel="0" knob="5"/>
+            </control>
+            
+            <!-- Effect Unit 2: Reverb (Dynamic Room) - Channel 1 -->
+            <control id="EffectUnit2_Effect2">
+                <mapping type="knob" channel="0" knob="6"/>
+            </control>
+            
+            <!-- Effect Unit 3: Echo/Delay (Intelligent) - Channel 1 -->
+            <control id="EffectUnit3_Effect3">
+                <mapping type="knob" channel="0" knob="7"/>
+            </control>
+            
+            <!-- ==================== UV CONTROL INTERFACE ==================== -->
+            <!-- UV Controller Bass Boost Max Parameter -->
+            <control id="uv_bass_boost_max">
+                <mapping type="midi_cc" channel="1" cc="140"/>
+            </control>
+            
+            <!-- UV Controller Mid Boost Max Parameter -->
+            <control id="uv_mid_boost_max">
+                <mapping type="midi_cc" channel="1" cc="141"/>
+            </control>
+            
+            <!-- UV Controller High Boost Max Parameter -->
+            <control id="uv_high_boost_max">
+                <mapping type="midi_cc" channel="1" cc="142"/>
+            </control>
+            
+            <!-- ==================== SYNC MAPPINGS ==================== -->
+            <!-- BPM sync control -->
+            <control id="sync_mode">
+                <mapping type="button" channel="1" note="98"/>
+            </control>
+            
+            <!-- Sync enable/disable -->
+            <control id="sync_enabled">
+                <mapping type="button" channel="2" note="99"/>
+            </control>
+            
+            <!-- ==================== MASTER GAIN ==================== -->
+            <!-- Master output gain control -->
+            <control id="gain">
+                <mapping type="knob" channel="0" knob="8"/>
+            </control>
+            
+            <!-- ==================== QUICK EFFECTS RACK ==================== -->
+            <!-- Quick Effect Super Control -->
+            <control id="quick_effect_super1">
+                <mapping type="button" channel="2" note="100"/>
+            </control>
+        </controls>
+        
+        <!-- ==================== OUTPUT MAPPINGS ==================== -->
         <outputs/>
     </controller>
 </MixxxControllerPreset>
