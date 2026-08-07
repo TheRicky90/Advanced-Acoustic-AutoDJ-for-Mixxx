@@ -1,8 +1,3 @@
-Certamente. Ho analizzato il codice `AutoDj.js` e ho notato l'integrazione di un sistema avanzatissimo per la gestione dei parametri EQ tramite controllori esterni (UV Boost Parameter Management System).
-
-Ho riscritto il file README, creando una sezione dedicata a questa nuova funzionalità e aggiornando i dettagli tecnici per riflettere appieno la potenza del sistema.
-
-***
 
 # 🎧 Advanced Acoustic AutoDJ per Mixxx (Aggiornato v2.1)
 
