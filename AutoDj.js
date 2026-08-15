@@ -23,6 +23,9 @@ midiAutoDJ.useFilterFX = 1;         // Abilita la gestione dei 3 Effetti Avanzat
 midiAutoDJ.filterFxIntensity = 0.85; // Intensità massima smussata per il Filtro Moog
 midiAutoDJ.filterFxInvert = 0;      
 
+midiAutoDJ.echoEnabledInSolo = 1;      // Enable echo when tracks play solo (Default: 1)
+midiAutoDJ.echoIntensitySolo = 0.35;   // Base echo intensity for solo mode (Default: 0.35)
+
 midiAutoDJ.maxBpmAdjustment = 20;    // Massimo stretching BPM consentito 
 midiAutoDJ.transpose = 1;           // Abilita mix armonico con trasposizione chiave
 midiAutoDJ.transposeMax = 1;        // Massimo semitoni di trasposizione (1)
@@ -45,6 +48,7 @@ midiAutoDJ.skips = 0;
 midiAutoDJ.transposeSkips = 0;
 midiAutoDJ.refineWait = 0;
 midiAutoDJ.songLoaded = 0;
+midiAutoDJ.thresholds = { bassIn: 0.35, bassOut: 0.50, highIn: 0.15, highOut: 0.60, echoStart: 0.60, reverbEnd: 0.90, peakBass: 0.90 };
 
 midiAutoDJ.init = function(id) {
     id = 0;
@@ -58,6 +62,17 @@ midiAutoDJ.init = function(id) {
     engine.setValue("[Channel2]", "keylockMode", 0.0);
     engine.setValue("[Master]", "crossfader", -1.0);
     
+
+    function safeDivide(numerator, denominator, defaultValue) {
+        return denominator && Math.abs(denominator) > 0.001 
+            ? numerator / denominator 
+            : defaultValue;
+    }
+
+    function clamp(value, min, max) {
+       return Math.min(Math.max(value, min), max);
+    }
+
     // --- UV BOOST PARAMETER MANAGEMENT SYSTEM ---
     
     /**
@@ -116,20 +131,25 @@ midiAutoDJ.init = function(id) {
     }
     
     /**
-     * Scheduled UV parameter refresh callback (runs every N seconds)
+     * LIVE UV PARAMETER READING - Reads bass boost directly from engine at call time
+     * No caching, no timer delays - always gets the current value
      */
-    midiAutoDJ.refreshUVParameters = function() {
-        // Periodically refresh values to allow real-time adjustment from UV controller
-        updateActiveBoostValues();
+    midiAutoDJ.readLiveBassBoost = function() {
+        try {
+            // Read directly from Mixxx engine - live value, no cache
+            var liveValue = engine.getValue("[UV_Control]", "bass_boost_max");
+            
+            if (liveValue !== undefined && typeof liveValue === 'number') {
+                // Validate and clamp to safe range for Mixxx EQ parameters
+                return Math.max(1.0, Math.min(liveValue, 4.0));
+            }
+        } catch (e) {
+            console.error("Live bass boost read error:", e);
+        }
+        
+        // Fallback to sensible default if reading fails
+        return 2.0;
     };
-    
-    // --- INITIALIZE UV PARAMETERS ON SCRIPT LOAD ---
-    updateActiveBoostValues();  // Read initial values immediately
-    
-    // Set up periodic refresh timer (every 5 seconds by default)
-    if (typeof engine.beginTimer === 'function') {
-        midiAutoDJ.uvRefreshTimer = engine.beginTimer(5000, "midiAutoDJ.refreshUVParameters");
-    }
     
     // --- MAIN INITIALIZATION CONTINUES HERE ---
     
@@ -453,135 +473,165 @@ midiAutoDJ.main = function() {
         skip = 0;
         midiAutoDJ.songLoaded = 0;
 
-        // NUOVA LOGICA ACUSTICA: INGRESSO BASSI ANTICIPATO E DECISETTI
+        // --- BPM-BASED EQ INTENSITY CALCULATION ---
+        // Tracce più veloci → effetto EQ più marcato e "aggressivo"
+        var bpmRange = 80;    // Range di riferimento BPM (es. 80-160)
+        var intensityBase = 0.5;  // Intensità minima moltiplicatore
+        var intensityMax = 2.0;   // Intensità massima moltiplicatore
+        var currentIntensity = Math.min(intensityMax, Math.max(intensityBase, (nextBpm - bpmRange) / bpmRange + intensityBase));
+
+        // --- NUOVA LOGICA ACUSTICA: INGRESSO BASSI ANTICIPATO E DECISETTI ---
         if (midiAutoDJ.useEQ) {
             
-            // 1. NUOVA GESTIONE DEI BASSI AGGRESSIVA (LOW EQ)
-            // Traccia in entrata (next): i bassi si svegliano presto al 35% del fader e salgono con decisione lineare
+            // LIVE UV PARAMETER READING - Read directly from engine at exact moment of need
+            var liveBassBoost = midiAutoDJ.readLiveBassBoost();
+            
+            // BPM-BASED EQ SCALING: currentIntensity moltiplica l'effetto per tracce veloci
+            var scaledBassBoost = liveBassBoost * currentIntensity;
+            var scaledMidBoost = liveBassBoost * currentIntensity;  // Use same bass value for consistency
+            var scaledHighBoost = liveBassBoost * currentIntensity; // Use same bass value for consistency
+
+            // 1. NUOVA GESTIONE DEI BASSI AGGRESSIVA (LOW EQ) - BPM-SCALED
             if (crossfader < 0.35) {
                 engine.setValue("[EqualizerRack1_[Channel"+next+"]_Effect1]", "parameter1", 0.2);
             } else {
-                // Curva ad attacco rapido: i bassi arrivano al picco boostato molto prima del fader completo
-                var factorInB = (crossfader - 0.35) / 0.55; 
-                var nextBassVal = 0.2 + ((midiAutoDJ.bassBoostMax - 0.2) * factorInB);
-                engine.setValue("[EqualizerRack1_[Channel"+next+"]_Effect1]", "parameter1", Math.min(midiAutoDJ.bassBoostMax, nextBassVal));
+                var factorInB = (crossfader - 0.35) / 0.55;
+                var nextBassVal = 0.2 + ((scaledBassBoost - 0.2) * factorInB);
+                engine.setValue("[EqualizerRack1_[Channel"+next+"]_Effect1]", "parameter1", Math.min(scaledBassBoost, nextBassVal));
             }
-            // Traccia in uscita (prev): mantiene i bassi carichi, ma crolla di colpo appena superato il 50%
-            if (crossfader < 0.50) {
-                var factorOutB = crossfader / 0.50;
-                var prevBassVal = midiAutoDJ.bassBoostMax * Math.cos(factorOutB * Math.PI / 4); // Sfumatura impercettibile nella prima metà
+            if (crossfader < midiAutoDJ.thresholds.bassOut) {
+                var factorOutB = crossfader / midiAutoDJ.thresholds.bassOut;
+                var prevBassVal = scaledBassBoost * Math.cos(factorOutB * Math.PI / 4);
                 engine.setValue("[EqualizerRack1_[Channel"+prev+"]_Effect1]", "parameter1", prevBassVal);
             } else {
-                // Taglio aggressivo post-centro per far respirare il nuovo kick appena entrato
-                var factorOutBPost = (crossfader - 0.50) / 0.50;
-                var bassCutStart = midiAutoDJ.bassBoostMax * Math.cos(Math.PI / 4); // Valore al 50% del fader, coerente col picco boostato
-                var prevBassValPost = bassCutStart * (1.0 - (factorOutBPost / 0.20)); // Svanisce a zero entro il 70% del fader
+                var factorOutBPost = (crossfader - midiAutoDJ.thresholds.bassOut) / (0.70 - midiAutoDJ.thresholds.bassOut);
+                var bassCutStart = scaledBassBoost * Math.cos(Math.PI / 4);
+                var prevBassValPost = bassCutStart * (1.0 - (factorOutBPost / (0.70 - midiAutoDJ.thresholds.bassOut)));
                 engine.setValue("[EqualizerRack1_[Channel"+prev+"]_Effect1]", "parameter1", Math.max(0.0, prevBassValPost));
             }
 
             if (midiAutoDJ.useMidHighEQ) {
-                // 2. GESTIONE DEI MEDI (MID EQ) - Incrocio Equal Power fluido per le voci
-                var prevMidVal = midiAutoDJ.midBoostMax * Math.cos(crossfader * Math.PI / 2);
+                // 2. GESTIONE DEI MEDI (MID EQ) - BPM-SCALED
+                var prevMidVal = scaledMidBoost * Math.cos(crossfader * Math.PI / 2);
                 engine.setValue("[EqualizerRack1_[Channel"+prev+"]_Effect1]", "parameter2", Math.max(0.0, prevMidVal * vuLevel));
                 
-                var nextMidVal = 0.2 + ((midiAutoDJ.midBoostMax - 0.2) * Math.sin(crossfader * Math.PI / 2));
-                engine.setValue("[EqualizerRack1_[Channel"+next+"]_Effect1]", "parameter2", Math.min(midiAutoDJ.midBoostMax, nextMidVal));
+                var nextMidVal = 0.2 + ((scaledMidBoost - 0.2) * Math.sin(crossfader * Math.PI / 2));
+                engine.setValue("[EqualizerRack1_[Channel"+next+"]_Effect1]", "parameter2", Math.min(scaledMidBoost, nextMidVal));
 
-                // 3. GESTIONE DEGLI ALTI (HIGH EQ) - Brillantezza ritmica
+                // 3. GESTIONE DEGLI ALTI (HIGH EQ) - BPM-SCALED
                 if (crossfader < 0.60) {
-                    engine.setValue("[EqualizerRack1_[Channel"+prev+"]_Effect1]", "parameter3", midiAutoDJ.highBoostMax);
+                    engine.setValue("[EqualizerRack1_[Channel"+prev+"]_Effect1]", "parameter3", scaledHighBoost);
                 } else {
                     var factorOutH = (crossfader - 0.60) / 0.40;
-                    var prevHighVal = midiAutoDJ.highBoostMax * Math.cos(factorOutH * Math.PI / 2);
+                    var prevHighVal = scaledHighBoost * Math.cos(factorOutH * Math.PI / 2);
                     engine.setValue("[EqualizerRack1_[Channel"+prev+"]_Effect1]", "parameter3", Math.max(0.0, prevHighVal * vuLevel));
                 }
                 
                 if (crossfader > 0.15) {
                     var factorInH = (crossfader - 0.15) / 0.85;
-                    var nextHighVal = 0.2 + ((midiAutoDJ.highBoostMax - 0.2) * Math.sin(factorInH * Math.PI / 2));
-                    engine.setValue("[EqualizerRack1_[Channel"+next+"]_Effect1]", "parameter3", Math.min(midiAutoDJ.highBoostMax, nextHighVal));
+                    var nextHighVal = 0.2 + ((scaledHighBoost - 0.2) * Math.sin(factorInH * Math.PI / 2));
+                    engine.setValue("[EqualizerRack1_[Channel"+next+"]_Effect1]", "parameter3", Math.min(scaledHighBoost, nextHighVal));
                 } else {
                     engine.setValue("[EqualizerRack1_[Channel"+next+"]_Effect1]", "parameter3", 0.2);
                 }
             }
         }
-        // LOGICA EFFETTI DINAMICA ANCORATI AL CROSSFADER GRAFICO (DURATA TEMPORALE ADATTIVA)
+        // ============================================================================
+        // AUTO DJ - EFFETTI DINAMICI IBRIDI
+        // Architettura V2 | Curve Matematiche V1
+        // ============================================================================
+
         if (midiAutoDJ.useFilterFX) {
+            // --- SETUP BASE ---
             var fxFloor = 1.0 - midiAutoDJ.filterFxIntensity;
 
-            // Assicuriamo l'accensione degli Slot 1, 2 e 3 per una gestione fluida
+            // Attivazione Slot per fluidità
             engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect1]", "enabled", 1.0);
             engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect1]", "enabled", 1.0);
 
-            // SLOT 1: Filtro Moog Liquido (Taglio + Risonanza dinamica a campana al centro del mix)
+            // --- SLOT 1: FILTRO MOOG LIQUIDO (Curve V1) ---
+    
+            // Track PREV - Uscita (Coseno per chiusura armonica)
             var filterCurvePrev = Math.cos(crossfader * Math.PI / 2) * vuLevel;
             var prevFxValue = 1.0 - ((1.0 - filterCurvePrev) * midiAutoDJ.filterFxIntensity);
-            engine.setValue("[EffectRack1_EffectUnit"+prev+"_Effect1]", "parameter1", midiAutoDJ.filterFxInvert ? (1.0 - prevFxValue) : prevFxValue);
+            engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect1]", "parameter1", 
+                            midiAutoDJ.filterFxInvert ? (1.0 - prevFxValue) : prevFxValue);
 
+            // Track NEXT - Ingresso (Seno per apertura fluida)
             var filterCurveNext = Math.sin(crossfader * Math.PI / 2) * vuLevel;
             var nextFxValue = fxFloor + (filterCurveNext * midiAutoDJ.filterFxIntensity);
-            engine.setValue("[EffectRack1_EffectUnit"+next+"_Effect1]", "parameter1", midiAutoDJ.filterFxInvert ? (1.0 - nextFxValue) : nextFxValue);
+            engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect1]", "parameter1", 
+                            midiAutoDJ.filterFxInvert ? (1.0 - nextFxValue) : nextFxValue);
 
-            // Risonanza Liquida (parameter2): sale fino al 40% (0.4) al centro esatto del mix (crossfader 0.5) per dare colore
-            var resonanceValue = 0.40 * Math.sin(crossfader * Math.PI) * vuLevel; 
+            // Risonanza a campana V1 - Picco al centro esatto
+             var resonanceValue = 0.40 * Math.sin(crossfader * Math.PI) * vuLevel;
             engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect1]", "parameter2", resonanceValue);
             engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect1]", "parameter2", resonanceValue);
 
-
-            // SLOT 2: Riverbero Dinamico (La traccia 'next' parte lontana in una grande stanza e si avvicina)
-            if (crossfader < 0.90) {
+            // --- SLOT 2: RIVERBERO DINAMICO (Curve V1 - Smoothstep) ---
+    
+            if (crossfader < midiAutoDJ.thresholds.reverbEnd) {
                 engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect2]", "enabled", 1.0);
-                
-                // Volume Dry/Wet (Sfumatura progressiva)
-                var reverbVal = 0.45 * Math.cos((crossfader / 0.90) * Math.PI / 2) * vuLevel;
+        
+                // Dry/Wet: Curve a S cubica V1 per ingresso naturale
+                var reverbProgress = crossfader / midiAutoDJ.thresholds.reverbEnd;
+                var reverbVal = 0.45 * (1.0 - (reverbProgress * reverbProgress * (3 - 2 * reverbProgress))) * vuLevel;
                 engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect2]", "drywet", reverbVal);
-                
-                // Dimensione Stanza (parameter2): parte larga (0.75) e si rimpicciolisce a zero man mano che il fader avanza
-                var roomSize = 0.75 * (1.0 - (crossfader / 0.90));
+        
+                // Room Size: Decadimento quadratico V1
+                var roomSize = 0.75 * Math.pow(1.0 - reverbProgress, 2);
                 engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect2]", "parameter2", roomSize);
             } else {
                 engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect2]", "drywet", 0.0);
                 engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect2]", "enabled", 0.0);
             }
+        
+
+             // --- CORRECTED UNIFIED ECHO MANAGEMENT ---
 
 
-            // SLOT 3: Echo Intelligente (La traccia 'prev' entra in eco al 60%. La coda si dilata e aumenta il feedback)
-            if (crossfader > 0.60) {
-                engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect3]", "enabled", 1.0);
-                var echoFactor = (crossfader - 0.60) / 0.40;
-                
-                // Volume Dry/Wet dell'Echo (fino a 0.90)
-                var echoVal = 0.90 * Math.sin(echoFactor * Math.PI / 2) * vuLevel;
-                engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect3]", "drywet", echoVal);
-                
-                // Tempo dell'Echo (parameter2): parte stretto a ritmo (0.2) e si dilata fino a un quarto intero (0.7) alla fine
-                var echoTime = 0.20 + (0.50 * echoFactor);
-                engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect3]", "parameter2", echoTime);
-                
-                // Feedback/Ripetizioni (parameter3): aumenta dal 40% (0.4) fino al 75% (0.75) per non far morire la coda
-                var echoFeedback = 0.40 + (0.35 * echoFactor);
-                engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect3]", "parameter3", echoFeedback);
+            // --- SLOT QUICK: ECHO INTELLIGENTE - UNIFIED LOGIC ---
+            // FIX: Define echoFactor first - normalized crossfader value for smooth transitions
+            var echoFactor = typeof crossfader === 'number' 
+                ? Math.max(0.0, Math.min(1.0, crossfader)) 
+                : 0.5;
+
+            // Then use it in calculations:
+            var echoIntensity = 0.90 * vuLevel;
+            var echoTimeBase = 0.20 + (0.50 * Math.pow(echoFactor, 1.5));
+            var echoFeedbackBase = 0.40 + (0.35 * Math.sin(echoFactor * Math.PI / 2));
+
+            // Apply to ACTIVE track during transitions
+            if (nextPlaying && nextPos > -0.15) {
+                engine.setValue("[EffectRack1_EffectUnit" + next + "_QuickEffect]", "enabled", 1.0);
+                engine.setValue("[EffectRack1_EffectUnit" + next + "_QuickEffect]", "drywet", echoIntensity);                    
+                engine.setValue("[EffectRack1_EffectUnit" + next + "_QuickEffect]", "parameter2", echoTimeBase);
+                engine.setValue("[EffectRack1_EffectUnit" + next + "_QuickEffect]", "parameter3", echoFeedbackBase);
             } else {
-                engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect3]", "drywet", 0.0);
-                engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect3]", "enabled", 0.0);
+                // Apply to PREV track during transitions (for exit effect)                    
+                engine.setValue("[EffectRack1_EffectUnit" + prev + "_QuickEffect]", "enabled", 1.0);
+                engine.setValue("[EffectRack1_EffectUnit" + prev + "_QuickEffect]", "drywet", echoIntensity * 0.7);
+                engine.setValue("[EffectRack1_EffectUnit" + prev + "_QuickEffect]", "parameter2", echoTimeBase * 1.2);
+                engine.setValue("[EffectRack1_EffectUnit" + prev + "_QuickEffect]", "parameter3", echoFeedbackBase * 0.9);
             }
-        }
+        
 
-        // LOGICA SYNC BPM (Invariata)
-        if ( midiAutoDJ.bpmSync ) {
-            if ( ! midiAutoDJ.syncing ) {
-                if (midiAutoDJ.bpmSyncFade) {
-                    midiAutoDJ.syncing = 1;
-                    engine.setValue("[Channel"+next+"]", "sync_mode", 1.0);
-                    engine.setValue("[Channel"+prev+"]", "sync_mode", 2.0);
-                    engine.setValue("[Channel"+next+"]", "sync_enabled", 1.0);
-                    engine.setValue("[Channel"+next+"]", "sync_enabled", 0.0);
-                } else if (engine.getValue("[Channel"+prev+"]", "beat_active")) {
-                    midiAutoDJ.syncing = 1;
-                    engine.setValue("[Channel"+prev+"]", "sync_mode", 1.0);
-                    engine.setValue("[Channel"+next+"]", "sync_mode", 2.0);
-                    engine.setValue("[Channel"+prev+"]", "sync_enabled", 1.0);
-                    engine.setValue("[Channel"+prev+"]", "sync_enabled", 0.0);
+            // LOGICA SYNC BPM (Invariata)
+            if ( midiAutoDJ.bpmSync ) {
+                if ( ! midiAutoDJ.syncing ) {
+                    if (midiAutoDJ.bpmSyncFade) {
+                        midiAutoDJ.syncing = 1;
+                        engine.setValue("[Channel"+next+"]", "sync_mode", 1.0);
+                        engine.setValue("[Channel"+prev+"]", "sync_mode", 2.0);
+                        engine.setValue("[Channel"+next+"]", "sync_enabled", 1.0);
+                        engine.setValue("[Channel"+next+"]", "sync_enabled", 0.0);
+                    } else if (engine.getValue("[Channel"+prev+"]", "beat_active")) {
+                        midiAutoDJ.syncing = 1;
+                        engine.setValue("[Channel"+prev+"]", "sync_mode", 1.0);
+                        engine.setValue("[Channel"+next+"]", "sync_mode", 2.0);
+                        engine.setValue("[Channel"+prev+"]", "sync_enabled", 1.0);
+                        engine.setValue("[Channel"+prev+"]", "sync_enabled", 0.0);
+                    }
                 }
             }
         }
@@ -590,22 +640,74 @@ midiAutoDJ.main = function() {
         // TRACCIA SOLITARIA / FINE TRANSIZIONE (Il boost resta attivo anche a riposo)
         // Applicato per canale realmente in play, non tramite 'prev', per evitare
         // che un'assegnazione ruoli momentaneamente ambigua lasci il deck audibile senza boost.
+        
+        // --- BPM-BASED EQ INTENSITY FOR SOLO TRACKS ---
+        var bpmRange = 80;
+        var intensityBase = 0.5;
+        var intensityMax = 2.0;
+        var currentIntensity = Math.min(intensityMax, Math.max(intensityBase, (nextBpm - bpmRange) / bpmRange + intensityBase));
+        
+        // LIVE UV PARAMETER READING - Read directly from engine at exact moment of need
+        var liveBassBoost = midiAutoDJ.readLiveBassBoost();
+        var scaledBassBoost = liveBassBoost * currentIntensity;
+        var scaledMidBoost = liveBassBoost * currentIntensity;  // Use same bass value for consistency
+        var scaledHighBoost = liveBassBoost * currentIntensity; // Use same bass value for consistency
+    
         if (midiAutoDJ.useEQ) {
             if (deck1Playing) {
-                engine.setValue("[EqualizerRack1_[Channel1]_Effect1]", "parameter1", midiAutoDJ.bassBoostMax);
+                engine.setValue("[EqualizerRack1_[Channel1]_Effect1]", "parameter1", scaledBassBoost);
                 if (midiAutoDJ.useMidHighEQ) {
-                    engine.setValue("[EqualizerRack1_[Channel1]_Effect1]", "parameter2", midiAutoDJ.midBoostMax);
-                    engine.setValue("[EqualizerRack1_[Channel1]_Effect1]", "parameter3", midiAutoDJ.highBoostMax);
+                    engine.setValue("[EqualizerRack1_[Channel1]_Effect1]", "parameter2", scaledMidBoost);
+                    engine.setValue("[EqualizerRack1_[Channel1]_Effect1]", "parameter3", scaledHighBoost);
                 }
             }
             if (deck2Playing) {
-                engine.setValue("[EqualizerRack1_[Channel2]_Effect1]", "parameter1", midiAutoDJ.bassBoostMax);
+                engine.setValue("[EqualizerRack1_[Channel2]_Effect1]", "parameter1", scaledBassBoost);
                 if (midiAutoDJ.useMidHighEQ) {
-                    engine.setValue("[EqualizerRack1_[Channel2]_Effect1]", "parameter2", midiAutoDJ.midBoostMax);
-                    engine.setValue("[EqualizerRack1_[Channel2]_Effect1]", "parameter3", midiAutoDJ.highBoostMax);
+                    engine.setValue("[EqualizerRack1_[Channel2]_Effect1]", "parameter2", scaledMidBoost);
+                    engine.setValue("[EqualizerRack1_[Channel2]_Effect1]", "parameter3", scaledHighBoost);
                 }
             }
         }
+        // --- CORRECTED ECHO MANAGEMENT FOR SOLO TRACKS ---
+        if (midiAutoDJ.useFilterFX && midiAutoDJ.echoEnabledInSolo) {
+            // Calculate echo intensity based on BPM and current volume level
+            var bpmRange = 80;
+            var intensityBase = 0.5;
+            var intensityMax = 1.5;
+            var currentIntensity = Math.min(intensityMax, Math.max(intensityBase, (nextBpm - bpmRange) / bpmRange + intensityBase));
+    
+            // LIVE UV PARAMETER READING for echo consistency
+            var liveBassBoost = midiAutoDJ.readLiveBassBoost();
+            var scaledEchoIntensity = liveBassBoost * currentIntensity;
+    
+            // Apply echo effect to active track(s)
+            if (deck1Playing) {
+                engine.setValue("[EffectRack1_EffectUnit1_QuickEffect]", "enabled", 1.0);
+                engine.setValue("[EffectRack1_EffectUnit1_QuickEffect]", "drywet", 0.35 * vuLevel);
+                engine.setValue("[EffectRack1_EffectUnit1_QuickEffect]", "parameter2", 0.4 + (0.3 * currentIntensity));
+                engine.setValue("[EffectRack1_EffectUnit1_QuickEffect]", "parameter3", 0.35 + (0.25 * currentIntensity));
+            }
+    
+            if (deck2Playing) {
+                engine.setValue("[EffectRack1_EffectUnit2_QuickEffect]", "enabled", 1.0);
+                engine.setValue("[EffectRack1_EffectUnit2_QuickEffect]", "drywet", 0.35 * vuLevel);
+                engine.setValue("[EffectRack1_EffectUnit2_QuickEffect]", "parameter2", 0.4 + (0.3 * currentIntensity));
+                engine.setValue("[EffectRack1_EffectUnit2_QuickEffect]", "parameter3", 0.35 + (0.25 * currentIntensity));
+            }
+        } else {
+            // Echo disabled in solo mode - clean up
+            if (deck1Playing) {
+                engine.setValue("[EffectRack1_EffectUnit1_QuickEffect]", "enabled", 0.0);
+                engine.setValue("[EffectRack1_EffectUnit1_QuickEffect]", "drywet", 0.0);
+            }
+            if (deck2Playing) {
+                engine.setValue("[EffectRack1_EffectUnit2_QuickEffect]", "enabled", 0.0);
+                engine.setValue("[EffectRack1_EffectUnit2_QuickEffect]", "drywet", 0.0);
+            }
+        }
+
+
         if (midiAutoDJ.useFilterFX) {
             // Reset totale di sicurezza di tutti i parametri interni ed esterni per rilasciare i controlli manuali
             var fxOpenValue = midiAutoDJ.filterFxInvert ? 0.0 : 1.0;
@@ -617,10 +719,10 @@ midiAutoDJ.main = function() {
             engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect2]", "drywet", 0.0);
             engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect2]", "parameter2", 0.0); // Stanza azzerata
             engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect2]", "enabled", 0.0);
-            engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect3]", "drywet", 0.0);
-            engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect3]", "parameter2", 0.0); // Tempo echo resettato
-            engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect3]", "parameter3", 0.0); // Feedback echo resettato
-            engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect3]", "enabled", 0.0);
+            engine.setValue("[EffectRack1_EffectUnit" + prev + "_QuickEffect]", "drywet", 0.0);
+            engine.setValue("[EffectRack1_EffectUnit" + prev + "_QuickEffect]", "parameter2", 0.0); // Tempo echo resettato
+            engine.setValue("[EffectRack1_EffectUnit" + prev + "_QuickEffect]", "parameter3", 0.0); // Feedback echo resettato
+            engine.setValue("[EffectRack1_EffectUnit" + prev + "_QuickEffect]", "enabled", 0.0);
             
             // Pulisce preventivamente l'unità della traccia in coda (next)
             engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect1]", "parameter1", fxOpenValue);
@@ -629,10 +731,10 @@ midiAutoDJ.main = function() {
             engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect2]", "drywet", 0.0);
             engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect2]", "parameter2", 0.0);
             engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect2]", "enabled", 0.0);
-            engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect3]", "drywet", 0.0);
-            engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect3]", "parameter2", 0.0);
-            engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect3]", "parameter3", 0.0);
-            engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect3]", "enabled", 0.0);
+            engine.setValue("[EffectRack1_EffectUnit" + next + "_QuickEffect]", "drywet", 0.0);
+            engine.setValue("[EffectRack1_EffectUnit" + next + "_QuickEffect]", "parameter2", 0.0);
+            engine.setValue("[EffectRack1_EffectUnit" + next + "_QuickEffect]", "parameter3", 0.0);
+            engine.setValue("[EffectRack1_EffectUnit" + next + "_QuickEffect]", "enabled", 0.0);
         }
 
         if (midiAutoDJ.bpmSyncFade) {
@@ -717,10 +819,13 @@ midiAutoDJ.main = function() {
 
                 // ARMO I LIVELLI STANDARD PRIMA DEL MOVIMENTO GRAFICO
                 if (midiAutoDJ.useEQ) {
-                    engine.setValue("[EqualizerRack1_[Channel"+prev+"]_Effect1]", "parameter1", midiAutoDJ.bassBoostMax);
+                    // LIVE UV PARAMETER READING - Read directly from engine at exact moment of need
+                    var liveBassBoost = midiAutoDJ.readLiveBassBoost();
+                    engine.setValue("[EqualizerRack1_[Channel"+prev+"]_Effect1]", "parameter1", liveBassBoost);
                     if (midiAutoDJ.useMidHighEQ) {
-                        engine.setValue("[EqualizerRack1_[Channel"+prev+"]_Effect1]", "parameter2", midiAutoDJ.midBoostMax);
-                        engine.setValue("[EqualizerRack1_[Channel"+prev+"]_Effect1]", "parameter3", midiAutoDJ.highBoostMax);
+                        // Use same bass value for consistency in pre-start phase
+                        engine.setValue("[EqualizerRack1_[Channel"+prev+"]_Effect1]", "parameter2", liveBassBoost);
+                        engine.setValue("[EqualizerRack1_[Channel"+prev+"]_Effect1]", "parameter3", liveBassBoost);
                     }
                     engine.setValue("[EqualizerRack1_[Channel"+next+"]_Effect1]", "parameter1", 0.2);
                     if (midiAutoDJ.useMidHighEQ) {
@@ -739,10 +844,10 @@ midiAutoDJ.main = function() {
                     engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect2]", "enabled", 0.0);
                     engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect2]", "drywet", 0.0);
                     engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect2]", "parameter2", 0.0);
-                    engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect3]", "enabled", 0.0);
-                    engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect3]", "drywet", 0.0);
-                    engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect3]", "parameter2", 0.0);
-                    engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect3]", "parameter3", 0.0);
+                    engine.setValue("[EffectRack1_EffectUnit" + prev + "_QuickEffect]", "enabled", 0.0);
+                    engine.setValue("[EffectRack1_EffectUnit" + prev + "_QuickEffect]", "drywet", 0.0);
+                    engine.setValue("[EffectRack1_EffectUnit" + prev + "_QuickEffect]", "parameter2", 0.0);
+                    engine.setValue("[EffectRack1_EffectUnit" + prev + "_QuickEffect]", "parameter3", 0.0);
 
                     engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect1]", "enabled", 1.0);
                     engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect1]", "parameter1", midiAutoDJ.filterFxInvert ? (1.0 - fxFloorStart) : fxFloorStart);
@@ -750,10 +855,10 @@ midiAutoDJ.main = function() {
                     engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect2]", "enabled", 1.0);
                     engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect2]", "drywet", 0.45); 
                     engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect2]", "parameter2", 0.75); // Stanza larga iniziale pronta ad avvicinarsi
-                    engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect3]", "enabled", 0.0);
-                    engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect3]", "drywet", 0.0);
-                    engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect3]", "parameter2", 0.0);
-                    engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect3]", "parameter3", 0.0);
+                    engine.setValue("[EffectRack1_EffectUnit" + next + "_QuickEffect]", "enabled", 0.0);
+                    engine.setValue("[EffectRack1_EffectUnit" + next + "_QuickEffect]", "drywet", 0.0);
+                    engine.setValue("[EffectRack1_EffectUnit" + next + "_QuickEffect]", "parameter2", 0.0);
+                    engine.setValue("[EffectRack1_EffectUnit" + next + "_QuickEffect]", "parameter3", 0.0);
                 }
 
                 var nextBpmAdjusted = nextBpm;
