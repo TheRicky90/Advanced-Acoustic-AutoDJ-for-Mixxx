@@ -1,153 +1,188 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 
- AutoDJ LoopMIDI - Complete MIDI Mapping Configuration
- Compatible with Mixxx 2.5.0+ and AutoDJ.js Script v2.1.0
--->
 <MixxxControllerPreset mixxxVersion="2.5.0+" schemaVersion="1">
     <info>
-        <name>AutoDJ LoopMIDI - Complete (v2.0)</name>
-        <author>Community</author>
-        <description>Full MIDI mappings for complete AutoDJ.js functionality including EQ, Effects, and UV Control integration</description>
+        <name>AutoDJ LoopMIDI - Optimized VU/UV</name>
+        <author>Fixed AutoDJ Implementation</author>
+        <description>Advanced AutoDJ with proper MIDI mapping, script binding, and controller integration</description>
     </info>
     
-    <!-- Main AutoDJ Controller -->
     <controller id="loopMIDI Port">
+        <!-- Script file configuration -->
         <scriptfiles>
+            <!-- functionprefix must match the object name in JS (midiAutoDJ) -->
             <file functionprefix="midiAutoDJ" filename="AutoDJ.js"/>
         </scriptfiles>
         
-        <!-- ==================== DECK DETECTION MAPPINGS ==================== -->
         <controls>
-            <!-- Play indicator for both decks (detecting playing state) -->
-            <control id="play_indicator">
-                <mapping type="button" channel="1" note="96"/>
-                <mapping type="button" channel="2" note="97"/>
-            </control>
+            <!-- ==================== PLAY INDICATORS - CRITICAL FOR TRANSITION DETECTION ==================== -->
             
-            <!-- BPM values from deck metadata -->
-            <control id="file_bpm">
-                <mapping type="midi_cc" channel="0" cc="123"/>
+            <!-- Channel 1 Play Indicator - Maps to [Channel1],play_indicator Mixxx Control -->
+            <control id="[Channel1],play_indicator">
+                <group>[Channel1]</group>
+                <key>play_indicator</key>
+                <status>0x91</status>
+                <midino>0x60</midino>  <!-- Note 96 = 0x60 in hex -->
             </control>
+
+            <!-- Channel 2 Play Indicator - Maps to [Channel2],play_indicator Mixxx Control -->
+            <control id="[Channel2],play_indicator">
+                <group>[Channel2]</group>
+                <key>play_indicator</key>
+                <status>0x91</status>
+                <midino>0x61</midino>  <!-- Note 97 = 0x61 in hex -->
+            </control>
+
+            <!-- ==================== AUTO DJ CONTROLS - BUILT-IN MIXXX CONTROLS ==================== -->
             
-            <!-- ==================== VU METER MAPPINGS ==================== -->
-            <!-- Left channel VU meter (primary audio level source) -->
-            <control id="vu_meter_left">
-                <mapping type="midi_cc" channel="0" cc="124"/>
+            <!-- AutoDJ fade_now trigger - Built-in Mixxx control for transition triggering -->
+            <control id="[AutoDJ],fade_now">
+                <group>[AutoDJ]</group>
+                <key>fade_now</key>
+                <status>0x91</status>
+                <midino>0x5F</midino>  <!-- Note 95 = 0x5F in hex -->
             </control>
+
+            <!-- AutoDJ shuffle_playlist - Optional randomization control -->
+            <control id="[AutoDJ],shuffle_playlist">
+                <group>[AutoDJ]</group>
+                <key>shuffle_playlist</key>
+                <status>0x91</status>
+                <midino>0x62</midino>  <!-- Note 98 = 0x62 in hex -->
+            </control>
+
+            <!-- ==================== CROSSFADER TRACK SWITCH - AUTO DJ CONTROL ==================== -->
             
-            <!-- Right channel VU meter (fallback/secondary) -->
-            <control id="vu_meter_right">
-                <mapping type="midi_cc" channel="0" cc="125"/>
+            <!-- Crossfader Track Switch - Triggers AutoDJ track switching via script function -->
+            <control id="CrossfaderTrackSwitch">
+                <group>[App]</group>
+                <key>CrossfaderTrackSwitch</key>
+                <status>0xB0</status>
+                <midino>0x02</midino>  <!-- CC 2 = 0x02 in hex -->
+                <options>
+                    <Script-Binding/>
+                </options>
             </control>
+
+            <!-- ==================== BPM TRACKING VIA MIDI CC ==================== -->
             
-            <!-- ==================== POSITION TRACKING ==================== -->
-            <!-- Play position for transition logic -->
-            <control id="playposition">
-                <mapping type="midi_cc" channel="0" cc="126"/>
+            <!-- BPM tracking - Maps to [App],file_bpm for BPM detection -->
+            <control id="[App],file_bpm">
+                <group>[App]</group>
+                <key>file_bpm</key>
+                <status>0xB0</status>
+                <midino>0x7B</midino>  <!-- CC 123 = 0x7B in hex -->
             </control>
+
+            <!-- ==================== UV CONTROL FOR DYNAMIC EQ PARAMETERS ==================== -->
             
-            <!-- ==================== MASTER/CROSSFADE CONTROL ==================== -->
-            <!-- Master crossfader position - CRITICAL FOR CROSSFADE LOGIC -->
-            <control id="master_crossfader">
-                <mapping type="knob" channel="0" knob="1"/>
+            <!-- UV Control - Maps to [UV_Control],bass_boost_max for dynamic EQ control -->
+            <control id="[UV_Control],bass_boost_max">
+                <group>[UV_Control]</group>
+                <key>bass_boost_max</key>
+                <status>0xB0</status>
+                <midino>0x7C</midino>  <!-- CC 124 = 0x7C in hex -->
             </control>
+
+            <!-- ==================== EFFECT PARAMETERS - ISSUE #4 FIX =================-->
             
-            <!-- Main VU meter reading for level normalization -->
-            <control id="main_vu_meter">
-                <mapping type="midi_cc" channel="0" cc="127"/>
+            <!-- Effect Unit 1 - Channel 1 Bass EQ Control -->
+            <control id="[EffectRack1_EffectUnit1_Effect1],parameter1">
+                <group>[EffectRack1_EffectUnit1_Effect1]</group>
+                <key>parameter1</key>
+                <status>0x91</status>
+                <midino>0x58</midino>  <!-- Note 88 = 0x58 in hex -->
             </control>
+
+            <!-- Effect Unit 2 - Channel 1 Reverb Control -->
+            <control id="[EffectRack1_EffectUnit2_Effect2],parameter1">
+                <group>[EffectRack1_EffectUnit2_Effect2]</group>
+                <key>parameter1</key>
+                <status>0x91</status>
+                <midino>0x59</midino>  <!-- Note 89 = 0x59 in hex -->
+            </control>
+
+            <!-- Add these Quick Effect mappings for echo functionality -->
+            <control id="[EffectRack1_EffectUnit1_QuickEffect],drywet">
+                <group>[EffectRack1_EffectUnit1_QuickEffect]</group>
+                <key>drywet</key>
+                <status>0xB0</status>
+                <midino>0x7A</midino>  <!-- CC 122 -->
+            </control>
+
+            <control id="[EffectRack1_EffectUnit1_QuickEffect],parameter2">
+                <group>[EffectRack1_EffectUnit1_QuickEffect]</group>
+                <key>parameter2</key>
+                <status>0xB0</status>
+                <midino>0x7B</midino>  <!-- CC 123 -->
+            </control>
+
+            <control id="[EffectRack1_EffectUnit1_QuickEffect],parameter3">
+                <group>[EffectRack1_EffectUnit1_QuickEffect]</group>
+                <key>parameter3</key>
+                <status>0xB0</status>
+                <midino>0x7C</midino>  <!-- CC 124 -->
+            </control>
+
+            <!-- ==================== EQ PARAMETER CONTROLS - MIXXX NATIVE NAMES =================-->
             
-            <!-- ==================== DECK CONTROL MAPPINGS ==================== -->
-            <control id="deck1_play_indicator">
-                <mapping type="button" channel="1" note="96"/>
+            <!-- Channel 1 Bass EQ Parameter - Maps to [Channel1],effect1_bass -->
+            <control id="[Channel1],effect1_bass">
+                <group>[Channel1]</group>
+                <key>effect1_bass</key>
+                <status>0xB0</status>
+                <midino>0x7D</midino>  <!-- CC 125 = 0x7D in hex -->
             </control>
+
+            <!-- Channel 1 Mid EQ Parameter - Maps to [Channel1],effect1_mid -->
+            <control id="[Channel1],effect1_mid">
+                <group>[Channel1]</group>
+                <key>effect1_mid</key>
+                <status>0xB0</status>
+                <midino>0x7E</midino>  <!-- CC 126 = 0x7E in hex -->
+            </control>
+
+            <!-- Channel 1 High EQ Parameter - Maps to [Channel1],effect1_high -->
+            <control id="[Channel1],effect1_high">
+                <group>[Channel1]</group>
+                <key>effect1_high</key>
+                <status>0xB0</status>
+                <midino>0x7F</midino>  <!-- CC 127 = 0x7F in hex -->
+            </control>
+
+            <!-- Channel 2 Bass EQ Parameter - Maps to [Channel2],effect1_bass -->
+            <control id="[Channel2],effect1_bass">
+                <group>[Channel2]</group>
+                <key>effect1_bass</key>
+                <status>0xB0</status>
+                <midino>0x80</midino>  <!-- CC 128 = 0x80 in hex -->
+            </control>
+
+            <!-- Channel 2 Mid EQ Parameter - Maps to [Channel2],effect1_mid -->
+            <control id="[Channel2],effect1_mid">
+                <group>[Channel2]</group>
+                <key>effect1_mid</key>
+                <status>0xB0</status>
+                <midino>0x81</midino>  <!-- CC 129 = 0x81 in hex -->
+            </control>
+
+            <!-- Channel 2 High EQ Parameter - Maps to [Channel2],effect1_high -->
+            <control id="[Channel2],effect1_high">
+                <group>[Channel2]</group>
+                <key>effect1_high</key>
+                <status>0xB0</status>
+                <midino>0x82</midino>  <!-- CC 130 = 0x82 in hex -->
+            </control>
+
+            <!-- ==================== DEBUG/TEST CONTROLS ==================== -->
             
-            <control id="deck2_play_indicator">
-                <mapping type="button" channel="2" note="97"/>
+            <!-- Debug toggle - Can be mapped to a test button for troubleshooting -->
+            <control id="[Controls],debug_toggle">
+                <group>[Controls]</group>
+                <key>debug_toggle</key>
+                <status>0x92</status>
+                <midino>0x54</midino>  <!-- Note 84 = 0x54 in hex -->
             </control>
-            
-            <!-- Deck file position tracking -->
-            <control id="deck1_file_position">
-                <mapping type="midi_cc" channel="0" cc="130"/>
-            </control>
-            
-            <control id="deck2_file_position">
-                <mapping type="midi_cc" channel="0" cc="131"/>
-            </control>
-            
-            <!-- ==================== EQ RACK MAPPINGS ==================== -->
-            <!-- Bass EQ Control (Low Frequency) - Channel 1 Effect Unit -->
-            <control id="eq_bass_control">
-                <mapping type="knob" channel="0" knob="2"/>
-            </control>
-            
-            <!-- Mid EQ Control (Mid Frequencies) - Channel 1 Effect Unit -->
-            <control id="eq_mid_control">
-                <mapping type="knob" channel="0" knob="3"/>
-            </control>
-            
-            <!-- High EQ Control (High Frequencies) - Channel 1 Effect Unit -->
-            <control id="eq_high_control">
-                <mapping type="knob" channel="0" knob="4"/>
-            </control>
-            
-            <!-- ==================== EFFECT RACK MAPPINGS ==================== -->
-            <!-- Effect Unit 1: Bass EQ / Filter (Moog Liquid) - Channel 1 -->
-            <control id="EffectUnit1_Effect1">
-                <mapping type="knob" channel="0" knob="5"/>
-            </control>
-            
-            <!-- Effect Unit 2: Reverb (Dynamic Room) - Channel 1 -->
-            <control id="EffectUnit2_Effect2">
-                <mapping type="knob" channel="0" knob="6"/>
-            </control>
-            
-            <!-- Effect Unit 3: Echo/Delay (Intelligent) - Channel 1 -->
-            <control id="EffectUnit3_Effect3">
-                <mapping type="knob" channel="0" knob="7"/>
-            </control>
-            
-            <!-- ==================== UV CONTROL INTERFACE ==================== -->
-            <!-- UV Controller Bass Boost Max Parameter -->
-            <control id="uv_bass_boost_max">
-                <mapping type="midi_cc" channel="1" cc="140"/>
-            </control>
-            
-            <!-- UV Controller Mid Boost Max Parameter -->
-            <control id="uv_mid_boost_max">
-                <mapping type="midi_cc" channel="1" cc="141"/>
-            </control>
-            
-            <!-- UV Controller High Boost Max Parameter -->
-            <control id="uv_high_boost_max">
-                <mapping type="midi_cc" channel="1" cc="142"/>
-            </control>
-            
-            <!-- ==================== SYNC MAPPINGS ==================== -->
-            <!-- BPM sync control -->
-            <control id="sync_mode">
-                <mapping type="button" channel="1" note="98"/>
-            </control>
-            
-            <!-- Sync enable/disable -->
-            <control id="sync_enabled">
-                <mapping type="button" channel="2" note="99"/>
-            </control>
-            
-            <!-- ==================== MASTER GAIN ==================== -->
-            <!-- Master output gain control -->
-            <control id="gain">
-                <mapping type="knob" channel="0" knob="8"/>
-            </control>
-            
-            <!-- ==================== QUICK EFFECTS RACK ==================== -->
-            <!-- Quick Effect Super Control -->
-            <control id="quick_effect_super1">
-                <mapping type="button" channel="2" note="100"/>
-            </control>
+
         </controls>
-        
-        <!-- ==================== OUTPUT MAPPINGS ==================== -->
-        <outputs/>
     </controller>
 </MixxxControllerPreset>
