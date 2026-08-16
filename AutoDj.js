@@ -148,11 +148,11 @@ midiAutoDJ.resetUVDefaults = function() {
 };
 
 midiAutoDJ.getUVRefreshInterval = function() {
-    return 5000; // 5 seconds (configurable)
+    return 5000;
 };
 
 midiAutoDJ.setUVRefreshInterval = function(ms) {
-    ms = Math.max(1000, Math.min(ms || 5000, 30000)); // Clamp to reasonable range
+    ms = Math.max(1000, Math.min(ms || 5000, 30000)); 
     
     if (typeof engine.stopTimer === 'function' && midiAutoDJ.uvRefreshTimer) {
         engine.stopTimer(midiAutoDJ.uvRefreshTimer);
@@ -244,9 +244,9 @@ midiAutoDJ.getUVVersion = function() {
 };
 
 function readUVBoostParameters() {
-    var bassMax = 2.0;   // Default: moderate bass boost
-    var midMax   = 1.8;  // Default: moderate mid boost  
-    var highMax  = 1.2;  // Default: mild high boost
+    var bassMax = 2.0;  
+    var midMax   = 1.8;   
+    var highMax  = 1.2; 
     
     try {
         if (typeof engine.getValue === 'function') {
@@ -286,7 +286,6 @@ midiAutoDJ.initUVParameters = function() {
 midiAutoDJ.refreshUVParameters = function() {
     updateActiveBoostValues();
 };
-
 
 midiAutoDJ.main = function() {
     var deck1Playing = engine.getValue("[Channel1]", "play_indicator");
@@ -329,7 +328,7 @@ midiAutoDJ.main = function() {
 
     var crossfader = engine.getValue("[Master]", "crossfader");
     var rawValue = engine.getValue("[Main]", "vu_meter");
-    var vuLevel = typeof(rawValue) === 'number' ? rawValue : 0.5; // Default to middle
+    var vuLevel = typeof(rawValue) === 'number' ? rawValue : 0.5;
     crossfader = (crossfader+1.0)/2.0; 
     if ( next === 1 ) {
         crossfader = 1.0-crossfader;
@@ -340,18 +339,17 @@ midiAutoDJ.main = function() {
         skip = 0;
         midiAutoDJ.songLoaded = 0;
 
-        var bpmRange = 80;    // Range di riferimento BPM (es. 80-160)
-        var intensityBase = 0.5;  // Intensità minima moltiplicatore
-        var intensityMax = 2.0;   // Intensità massima moltiplicatore
+        var bpmRange = 80; 
+        var intensityBase = 0.5; 
+        var intensityMax = 2.0;  
         var currentIntensity = Math.min(intensityMax, Math.max(intensityBase, (nextBpm - bpmRange) / bpmRange + intensityBase));
 
         if (midiAutoDJ.useEQ) {
             
             var liveBassBoost = midiAutoDJ.readLiveBassBoost();
             var scaledBassBoost = liveBassBoost * currentIntensity;
-            var scaledMidBoost = liveBassBoost * currentIntensity;  // Use same bass value for consistency
-            var scaledHighBoost = liveBassBoost * currentIntensity; // Use same bass value for consistency
-
+            var scaledMidBoost = liveBassBoost * currentIntensity; 
+            var scaledHighBoost = liveBassBoost * currentIntensity;
             if (crossfader < 0.35) {
                 engine.setValue("[EqualizerRack1_[Channel"+next+"]_Effect1]", "parameter1", 0.2);
             } else {
@@ -462,8 +460,8 @@ midiAutoDJ.main = function() {
         
         var liveBassBoost = midiAutoDJ.readLiveBassBoost();
         var scaledBassBoost = liveBassBoost * currentIntensity;
-        var scaledMidBoost = liveBassBoost * currentIntensity;  // Use same bass value for consistency
-        var scaledHighBoost = liveBassBoost * currentIntensity; // Use same bass value for consistency
+        var scaledMidBoost = liveBassBoost * currentIntensity;
+        var scaledHighBoost = liveBassBoost * currentIntensity;
     
         if (midiAutoDJ.useEQ) {
             if (deck1Playing) {
@@ -491,14 +489,14 @@ midiAutoDJ.main = function() {
     
             if (deck1Playing) {
                 engine.setValue("[EffectRack1_EffectUnit1_QuickEffect]", "enabled", 1.0);
-                engine.setValue("[EffectRack1_EffectUnit1_QuickEffect]", "drywet", 0.35 * vuLevel);
+                engine.setValue("[EffectRack1_EffectUnit1_QuickEffect]", "drywet", midiAutoDJ.echoIntensitySolo * vuLevel);
                 engine.setValue("[EffectRack1_EffectUnit1_QuickEffect]", "parameter2", 0.4 + (0.3 * currentIntensity));
                 engine.setValue("[EffectRack1_EffectUnit1_QuickEffect]", "parameter3", 0.35 + (0.25 * currentIntensity));
             }
     
             if (deck2Playing) {
                 engine.setValue("[EffectRack1_EffectUnit2_QuickEffect]", "enabled", 1.0);
-                engine.setValue("[EffectRack1_EffectUnit2_QuickEffect]", "drywet", 0.35 * vuLevel);
+                engine.setValue("[EffectRack1_EffectUnit2_QuickEffect]", "drywet", midiAutoDJ.echoIntensitySolo * vuLevel);
                 engine.setValue("[EffectRack1_EffectUnit2_QuickEffect]", "parameter2", 0.4 + (0.3 * currentIntensity));
                 engine.setValue("[EffectRack1_EffectUnit2_QuickEffect]", "parameter3", 0.35 + (0.25 * currentIntensity));
             }
@@ -518,14 +516,14 @@ midiAutoDJ.main = function() {
             var fxOpenValue = midiAutoDJ.filterFxInvert ? 0.0 : 1.0;
             
             engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect1]", "parameter1", fxOpenValue);
-            engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect1]", "parameter2", 0.0); // Risonanza spenta
+            engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect1]", "parameter2", 0.0);
             engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect1]", "enabled", 0.0);
             engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect2]", "drywet", 0.0);
-            engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect2]", "parameter2", 0.0); // Stanza azzerata
+            engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect2]", "parameter2", 0.0);
             engine.setValue("[EffectRack1_EffectUnit" + prev + "_Effect2]", "enabled", 0.0);
             engine.setValue("[EffectRack1_EffectUnit" + prev + "_QuickEffect]", "drywet", 0.0);
-            engine.setValue("[EffectRack1_EffectUnit" + prev + "_QuickEffect]", "parameter2", 0.0); // Tempo echo resettato
-            engine.setValue("[EffectRack1_EffectUnit" + prev + "_QuickEffect]", "parameter3", 0.0); // Feedback echo resettato
+            engine.setValue("[EffectRack1_EffectUnit" + prev + "_QuickEffect]", "parameter2", 0.0);
+            engine.setValue("[EffectRack1_EffectUnit" + prev + "_QuickEffect]", "parameter3", 0.0);
             engine.setValue("[EffectRack1_EffectUnit" + prev + "_QuickEffect]", "enabled", 0.0);
             engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect1]", "parameter1", fxOpenValue);
             engine.setValue("[EffectRack1_EffectUnit" + next + "_Effect1]", "parameter2", 0.0);
