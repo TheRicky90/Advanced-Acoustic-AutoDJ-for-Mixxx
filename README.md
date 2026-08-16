@@ -1,8 +1,16 @@
-🎧 Advanced Acoustic AutoDJ per Mixxx
+🎧 Advanced Acoustic AutoDJ per Mixxx final version!
 
 Un avanzato script di automazione in JavaScript per Mixxx DJ Software, re-ingegnerizzato per seguire le regole empiriche della potenza acustica e del harmonic mixing.
 Questo script mappa un intero rack di EQ a 3 bande e un engine di 3 effetti direttamente sulla posizione del crossfader. La transizione è intelligente: scala dinamicamente tutti i parametri in tempo reale, permettendoti di controllare la durata e l'intensità del mix direttamente dall'interfaccia.
 
+
+✨ Novità dell'aggiornamento (v2.2.0) 🚀
+
+🆕 BPM Meeting Point Engine: Riscritta da zero la gestione del BPM tra le due tracce. Al momento del caricamento della traccia in coda (quando è ancora silenziosa, prima del fade), lo script calcola la media dei BPM reali rilevati da Mixxx (`file_bpm`) delle due tracce e porta **entrambi** i deck a quel valore intermedio in un unico passaggio pulito. Esempio: traccia A a 180 BPM, traccia B a 160 BPM → entrambe si assestano a 170 BPM prima ancora che il fade inizi.
+
+🆕 Zero salti di tempo durante il fade: Il BPM non viene più toccato durante la transizione vera e propria. L'AutoDJ di Mixxx blocca le tracce nel proprio ciclo di sincronizzazione durante il fade, quindi qualsiasi tentativo di correggere il tempo in quella fase produceva salti udibili invece di un adattamento graduale. Ora tutta la matematica avviene una sola volta, in anticipo, quando la traccia è ancora muta.
+
+🆕 Codebase più snello e stabile: Rimossi diversi meccanismi di sincronizzazione BPM sovrapposti e in conflitto tra loro (adattamento tramite `rate_temp`, glide multipli, `sync_mode`/`sync_enabled` istantanei) ereditati da versioni precedenti, che scrivevano il tempo delle tracce in contemporanea causando comportamento imprevedibile. Ora esiste un'unica logica, chiara e verificabile.
 
 ✨ Novità dell'aggiornamento (v2.1.0) 🚀
 
@@ -30,6 +38,8 @@ Time-Dilating Echo Outro: La traccia in uscita attiva una coda di echo dal 60% d
 Liquid Moog Filter Sweep: Entrambi i deck subiscono un filtro Passa-Basso speculare. Un "bump" di risonanza automatizzato raggiunge il picco esattamente al centro (50%) per simulare l'effetto di un mixer analogico high-end.
 
 Total Automation Freedom: Tutti i parametri vengono azzerati e restituiti al controllo manuale dell'hardware nell'esatto millisecondo in cui termina la transizione.
+
+BPM Meeting Point: All'inizio di ogni transizione, entrambe le tracce vengono portate al BPM medio reale (rilevato da Mixxx, non un valore fisso) tra uscente ed entrante, prima ancora che il fade sia udibile. Il tempo resta fermo per tutta la durata del mix: nessun salto, nessuna correzione a metà transizione.
 
 
 🚀 Installazione e Configurazione (Windows)
