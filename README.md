@@ -5,15 +5,23 @@ This script maps an entire 3-band EQ rack and a 3-effect engine directly to the 
 The transition is fully intelligent: it dynamically scales all parameters in real-time, allowing you to control both the mix duration and intensity directly from the interface.
 
 ✨ What's New in v2.2.0 🚀
+
 🆕 BPM Meeting Point Engine: Completely rewrote the track BPM management. Upon loading the upcoming track (while still silent, before the fade starts), the script calculates the average of the actual BPMs detected by Mixxx (file_bpm) for both tracks. It then adjusts both decks to this intermediate value in a single, clean step. Example: Track A is 180 BPM, Track B is 160 BPM → both settle at 170 BPM before the crossfade even begins.
+
 🆕 Zero Time Jumps During Fade: The BPM remains untouched during the actual transition. Mixxx's AutoDJ locks tracks into its sync cycle during the fade; any attempt to alter the tempo at this stage previously caused audible skips instead of a smooth adaptation. Now, all mathematical adjustments occur once, in advance, while the incoming track is silent.
+
 🆕 Streamlined & Ultra-Stable Codebase: Removed several overlapping and conflicting BPM sync mechanisms (such as rate_temp adjustments, multiple glides, and instant sync_mode/sync_enabled toggles) inherited from legacy versions that wrote track tempos simultaneously, causing unpredictable behavior. The system now features a single, clear, and fully verifiable logic.
 
 ✨ What's New in v2.1.0 🚀
+
 🆕 UV Boost Control System: Dynamic EQ parameter management via external controller or dedicated skin layout ([UV_Control]). You can now tweak the intensity of Bass, Mid, and High frequencies in real-time!
+
 🆕 Genre Presets Intelligence: Built-in support for musical genres (Electronic, Rock, Jazz, HipHop, Classical). The algorithm automatically applies specific, optimized EQ curves tailored to the loaded genre.
+
 🆕 BPM-Responsive Mixing: Filter aggressiveness and EQ intensity are no longer static. They automatically scale based on the track's BPM: the faster the track, the more pronounced and "punchy" the effect.
+
 🆕 Advanced Bass Logic: Introducing the "Aggressive Bass Swapping" algorithm. It triggers right before the fader center point, sharply cutting the outgoing track's low-end to prevent a muddy mix.
+
 
 🌟 Core FeaturesEqual Power Acoustic Crossfade: EQ attenuation follows precise logarithmic and trigonometric curves (Math.cos / Math.sin), preventing abrupt volume drops or audio clutter.Aggressive & Impactful Bass Swapping: The incoming track's bass activates early (at 35% of the transition), while the outgoing track's bass is sharply cut after the 50% mark, keeping the kick drum consistently defined.Dynamic Reverb Proximity: The incoming track starts immersed in a vast virtual space (55% Dry/Wet, 75% Room Size). As the fader advances, the room size shrinks down to zero, bringing the track "closer" to the listener.Time-Dilating Echo Outro: The outgoing track triggers an echo tail starting at 60% of the mix. The echo time dynamically dilates (from 1/8 to a full 1 beat) with increasing feedback for a spacious, professional outro.Liquid Moog Filter Sweep: Both decks undergo mirrored Low-Pass filtering. An automated resonance "bump" peaks exactly at the center (50%) to emulate high-end analog mixer behavior.Total Automation Freedom: All parameters reset and return to manual hardware control the exact millisecond the transition finishes.BPM Meeting Point: At the start of each transition, both tracks match the actual average BPM before the fade becomes audible. The tempo stays locked for the entire duration of the mix—no skips, no mid-transition adjustments.
 
