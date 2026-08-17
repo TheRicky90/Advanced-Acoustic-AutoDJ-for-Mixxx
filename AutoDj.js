@@ -8,7 +8,7 @@ midiAutoDJ.filterFxIntensity = 0.85;
 midiAutoDJ.filterFxInvert = 0;
 midiAutoDJ.echoEnabledInSolo = 1;
 midiAutoDJ.echoIntensitySolo = 0.35;
-midiAutoDJ.maxBpmAdjustment = 20;
+midiAutoDJ.maxBpmAdjustment = 15;
 midiAutoDJ.transpose = 1;
 midiAutoDJ.transposeMax = 1;
 midiAutoDJ.bpmSync = 1;
@@ -148,7 +148,7 @@ midiAutoDJ.resetUVDefaults = function() {
 };
 
 midiAutoDJ.getUVRefreshInterval = function() {
-    return 5000;
+    return 5000; 
 };
 
 midiAutoDJ.setUVRefreshInterval = function(ms) {
@@ -244,9 +244,9 @@ midiAutoDJ.getUVVersion = function() {
 };
 
 function readUVBoostParameters() {
-    var bassMax = 2.0;  
-    var midMax   = 1.8;   
-    var highMax  = 1.2; 
+    var bassMax = 2.0;   
+    var midMax   = 1.8;  
+    var highMax  = 1.2;  
     
     try {
         if (typeof engine.getValue === 'function') {
@@ -339,16 +339,16 @@ midiAutoDJ.main = function() {
         skip = 0;
         midiAutoDJ.songLoaded = 0;
 
-        var bpmRange = 80; 
-        var intensityBase = 0.5; 
-        var intensityMax = 2.0;  
+        var bpmRange = 80;
+        var intensityBase = 0.5;
+        var intensityMax = 2.0;
         var currentIntensity = Math.min(intensityMax, Math.max(intensityBase, (nextBpm - bpmRange) / bpmRange + intensityBase));
 
         if (midiAutoDJ.useEQ) {
             
             var liveBassBoost = midiAutoDJ.readLiveBassBoost();
             var scaledBassBoost = liveBassBoost * currentIntensity;
-            var scaledMidBoost = liveBassBoost * currentIntensity; 
+            var scaledMidBoost = liveBassBoost * currentIntensity;
             var scaledHighBoost = liveBassBoost * currentIntensity;
             if (crossfader < 0.35) {
                 engine.setValue("[EqualizerRack1_[Channel"+next+"]_Effect1]", "parameter1", 0.2);
@@ -373,7 +373,7 @@ midiAutoDJ.main = function() {
                 engine.setValue("[EqualizerRack1_[Channel"+prev+"]_Effect1]", "parameter2", Math.max(0.0, prevMidVal * vuLevel));
                 
                 var nextMidVal = 0.2 + ((scaledMidBoost - 0.2) * Math.sin(crossfader * Math.PI / 2));
-                engine.setValue("[EqualizerRack1_[Channel"+next+"]_Effect1]", "parameter2", Math.min(scaledMidBoost, nextMidVal));
+                engine.setValue("[EqualizerRack1_[Channel"+next+"]_Effect1]", "parameter2", Math.min(scaledMidBoost, nextMidVal * vuLevel));
 
                 if (crossfader < 0.60) {
                     engine.setValue("[EqualizerRack1_[Channel"+prev+"]_Effect1]", "parameter3", scaledHighBoost);
@@ -386,7 +386,7 @@ midiAutoDJ.main = function() {
                 if (crossfader > 0.15) {
                     var factorInH = (crossfader - 0.15) / 0.85;
                     var nextHighVal = 0.2 + ((scaledHighBoost - 0.2) * Math.sin(factorInH * Math.PI / 2));
-                    engine.setValue("[EqualizerRack1_[Channel"+next+"]_Effect1]", "parameter3", Math.min(scaledHighBoost, nextHighVal));
+                    engine.setValue("[EqualizerRack1_[Channel"+next+"]_Effect1]", "parameter3", Math.min(scaledHighBoost, nextHighVal * vuLevel));
                 } else {
                     engine.setValue("[EqualizerRack1_[Channel"+next+"]_Effect1]", "parameter3", 0.2);
                 }
