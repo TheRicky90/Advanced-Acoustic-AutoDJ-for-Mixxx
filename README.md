@@ -31,7 +31,15 @@ Paste it into your Mixxx user preferences folder:C:\Users\<Your-Username>\AppDat
 
 Open Mixxx. Go to Options > Preferences > Controllers. Select the virtual port (MixxxLoop). Load/enable AutoDJ.js from the Mapping or Script tab and check the box to activate it.
 
-🎛️ Mandatory FX Rack ConfigurationFor the script to properly control your audio, you must set up Mixxx's FX units exactly as follows:FX Unit 1 (Assigned to Channel 1): Moog Filter + ReverbFX Unit 2 (Assigned to Channel 2): Moog Filter + ReverbFX Unit 3: Leave empty (reserved for EQ automation)Quickslot (Channels 1 & 2): Echo Filter
+🎛️ Mandatory FX Rack ConfigurationFor the script to properly control your audio, you must set up Mixxx's FX units exactly as follows:
+
+FX Unit 1 (Assigned to Channel 1): Moog Filter + Reverb
+
+FX Unit 2 (Assigned to Channel 2): Moog Filter + Reverb
+
+FX Unit 3 Cannel 1-2 your choise (reserved for EQ Tweak) in my case (not used from the script!)
+
+Quickslot (Channels 1 & 2): Echo Filter
 
 <img width="2559" height="637" alt="Screenshot 2026-08-15 171837" src="https://github.com/user-attachments/assets/3d824ef4-68cd-4739-8d8c-94f2b8f65a6d" />
 
@@ -120,6 +128,8 @@ unita FX Slot 3 Rimane libero per un EQ
 FX Unit 1	Canale 1	Filtro Moog	Riverbero
 
 FX Unit 2	Canale 2	Filtro Moog	Riverbero	
+
+FX Unit 3 Cannel 1-2 your choise (reserved for EQ Tweak) in my case (not used from the script!)
 
 Quickslot   Canale 1-2  Filtro echo
 
