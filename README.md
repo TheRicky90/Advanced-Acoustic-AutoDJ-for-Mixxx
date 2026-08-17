@@ -41,11 +41,14 @@ BPM Meeting Point: At the start of each transition, both tracks match the actual
 The tempo stays locked for the entire duration of the mix—no skips, no mid-transition adjustments.
 
 
+
 🚀 Installation & Setup (Windows)Since Windows does not natively support virtual MIDI routing, a loopback driver is required.Install a Virtual MIDI Cable: Download and install loopMIDI (free software). 
 Open loopMIDI and create a new port named MixxxLoop. Keep loopMIDI running in the background.Copy the Script to Mixxx: Copy the AutoDJ.js  and xml file.
 Paste it into your Mixxx user preferences folder:C:\Users\<Your-Username>\AppData\Local\Mixxx\controllers\Activate the Script in Mixxx: 
 
+
 Open Mixxx. Go to Options > Preferences > Controllers. Select the virtual port (MixxxLoop). Load/enable AutoDJ.js from the Mapping or Script tab and check the box to activate it.
+
 
 🎛️ Mandatory FX Rack ConfigurationFor the script to properly control your audio, you must set up Mixxx's FX units exactly as follows:
 
