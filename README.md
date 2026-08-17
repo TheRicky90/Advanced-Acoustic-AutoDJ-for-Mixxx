@@ -1,3 +1,42 @@
+🎧 Advanced Acoustic AutoDJ for Mixxx (Final Version)
+
+An advanced JavaScript automation script for Mixxx DJ Software, re-engineered from the ground up to follow empirical acoustic power and harmonic mixing principles. 
+This script maps an entire 3-band EQ rack and a 3-effect engine directly to the crossfader position. 
+The transition is fully intelligent: it dynamically scales all parameters in real-time, allowing you to control both the mix duration and intensity directly from the interface.
+
+✨ What's New in v2.2.0 🚀
+🆕 BPM Meeting Point Engine: Completely rewrote the track BPM management. Upon loading the upcoming track (while still silent, before the fade starts), the script calculates the average of the actual BPMs detected by Mixxx (file_bpm) for both tracks. It then adjusts both decks to this intermediate value in a single, clean step. Example: Track A is 180 BPM, Track B is 160 BPM → both settle at 170 BPM before the crossfade even begins.
+🆕 Zero Time Jumps During Fade: The BPM remains untouched during the actual transition. Mixxx's AutoDJ locks tracks into its sync cycle during the fade; any attempt to alter the tempo at this stage previously caused audible skips instead of a smooth adaptation. Now, all mathematical adjustments occur once, in advance, while the incoming track is silent.
+🆕 Streamlined & Ultra-Stable Codebase: Removed several overlapping and conflicting BPM sync mechanisms (such as rate_temp adjustments, multiple glides, and instant sync_mode/sync_enabled toggles) inherited from legacy versions that wrote track tempos simultaneously, causing unpredictable behavior. The system now features a single, clear, and fully verifiable logic.
+
+✨ What's New in v2.1.0 🚀
+🆕 UV Boost Control System: Dynamic EQ parameter management via external controller or dedicated skin layout ([UV_Control]). You can now tweak the intensity of Bass, Mid, and High frequencies in real-time!
+🆕 Genre Presets Intelligence: Built-in support for musical genres (Electronic, Rock, Jazz, HipHop, Classical). The algorithm automatically applies specific, optimized EQ curves tailored to the loaded genre.
+🆕 BPM-Responsive Mixing: Filter aggressiveness and EQ intensity are no longer static. They automatically scale based on the track's BPM: the faster the track, the more pronounced and "punchy" the effect.
+🆕 Advanced Bass Logic: Introducing the "Aggressive Bass Swapping" algorithm. It triggers right before the fader center point, sharply cutting the outgoing track's low-end to prevent a muddy mix.
+
+🌟 Core FeaturesEqual Power Acoustic Crossfade: EQ attenuation follows precise logarithmic and trigonometric curves (Math.cos / Math.sin), preventing abrupt volume drops or audio clutter.Aggressive & Impactful Bass Swapping: The incoming track's bass activates early (at 35% of the transition), while the outgoing track's bass is sharply cut after the 50% mark, keeping the kick drum consistently defined.Dynamic Reverb Proximity: The incoming track starts immersed in a vast virtual space (55% Dry/Wet, 75% Room Size). As the fader advances, the room size shrinks down to zero, bringing the track "closer" to the listener.Time-Dilating Echo Outro: The outgoing track triggers an echo tail starting at 60% of the mix. The echo time dynamically dilates (from 1/8 to a full 1 beat) with increasing feedback for a spacious, professional outro.Liquid Moog Filter Sweep: Both decks undergo mirrored Low-Pass filtering. An automated resonance "bump" peaks exactly at the center (50%) to emulate high-end analog mixer behavior.Total Automation Freedom: All parameters reset and return to manual hardware control the exact millisecond the transition finishes.BPM Meeting Point: At the start of each transition, both tracks match the actual average BPM before the fade becomes audible. The tempo stays locked for the entire duration of the mix—no skips, no mid-transition adjustments.
+
+🚀 Installation & Setup (Windows)Since Windows does not natively support virtual MIDI routing, a loopback driver is required.Install a Virtual MIDI Cable: Download and install loopMIDI (free software). 
+Open loopMIDI and create a new port named MixxxLoop. Keep loopMIDI running in the background.Copy the Script to Mixxx: Copy the AutoDJ.js  and xml file.
+Paste it into your Mixxx user preferences folder:C:\Users\<Your-Username>\AppData\Local\Mixxx\controllers\Activate the Script in Mixxx: 
+
+Open Mixxx. Go to Options > Preferences > Controllers. Select the virtual port (MixxxLoop). Load/enable AutoDJ.js from the Mapping or Script tab and check the box to activate it.
+
+🎛️ Mandatory FX Rack ConfigurationFor the script to properly control your audio, you must set up Mixxx's FX units exactly as follows:FX Unit 1 (Assigned to Channel 1): Moog Filter + ReverbFX Unit 2 (Assigned to Channel 2): Moog Filter + ReverbFX Unit 3: Leave empty (reserved for EQ automation)Quickslot (Channels 1 & 2): Echo Filter
+
+<img width="2559" height="637" alt="Screenshot 2026-08-15 171837" src="https://github.com/user-attachments/assets/3d824ef4-68cd-4739-8d8c-94f2b8f65a6d" />
+
+🎵 How to UseLoad your tracks into the AutoDJ queue/playlist.Set your desired mix duration using the slider in the AutoDJ GUI panel (e.g., 20s for fast transitions, 60s+ for progressive genres). You can adjust this on the fly during the mix!Ensure you have set Hotcue 4 on your tracks: it serves as the structural trigger point for the automation outro.Click Enable AutoDJ.
+
+now you can access some setting from mixxx setup directly:
+
+<img width="1792" height="1537" alt="immagine" src="https://github.com/user-attachments/assets/840a2e28-c746-442d-b873-2656ebbca510" />
+
+
+📄 LicenseDistributed under the GNU GPL v3 or later license.
+
+
 🎧 Advanced Acoustic AutoDJ per Mixxx final version!
 
 Un avanzato script di automazione in JavaScript per Mixxx DJ Software, re-ingegnerizzato per seguire le regole empiriche della potenza acustica e del harmonic mixing.
@@ -89,6 +128,9 @@ Imposta la durata del mix desiderata tramite lo slider nel pannello GUI di AutoD
 Assicurati di aver impostato un Hotcue 4 sulle tracce: funge da punto di trigger strutturale per l'uscita dell'automazione.
 Clicca su Abilita AutoDJ.
 
+ora le impostazzioni sono accessibili direttamnte dalle impostazzioni interne di mixx 
+
+<img width="1792" height="1537" alt="immagine" src="https://github.com/user-attachments/assets/840a2e28-c746-442d-b873-2656ebbca510" />
 
 📄 Licenza
 
