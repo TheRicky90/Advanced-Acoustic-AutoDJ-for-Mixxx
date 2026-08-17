@@ -1,10 +1,133 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <MixxxControllerPreset mixxxVersion="2.5.0+" schemaVersion="1">
     <info>
-        <name>AutoDJ LoopMIDI - Optimized VU/UV</name>
+        <n>AutoDJ LoopMIDI - Optimized VU/UV</n>
         <author>Fixed AutoDJ Implementation</author>
         <description>Advanced AutoDJ with proper MIDI mapping, script binding, and controller integration</description>
     </info>
+
+    <settings>
+        <group label="Sincronizzazione BPM">
+            <row orientation="vertical">
+                <option
+                    variable="bpmSyncFade"
+                    type="boolean"
+                    default="true"
+                    label="Attiva il matching automatico del BPM durante il fade">
+                    <description>
+                        Se attivo, durante ogni transizione i due deck convergono gradualmente verso un BPM comune (meeting point), agganciato in tempo reale alla posizione del crossfader. Se disattivato, i BPM delle tracce non vengono toccati.
+                    </description>
+                </option>
+                <option
+                    variable="beatPhaseSync"
+                    type="boolean"
+                    default="true"
+                    label="Attiva l'allineamento di fase (downbeat sync)">
+                    <description>
+                        Se attivo, oltre al BPM viene corretta anche la posizione dei battiti (beat_distance) tra i due deck con micro salti impercettibili, per un sync reale e non solo di tempo. Richiede bpmSyncFade attivo.
+                    </description>
+                </option>
+                <option
+                    variable="maxBpmAdjustment"
+                    type="integer"
+                    min="0"
+                    max="100"
+                    default="20"
+                    label="Divario massimo di BPM tollerato (%)">
+                    <description>
+                        Se la differenza percentuale di BPM tra le due tracce (considerando anche mezzo/doppio tempo) supera questa soglia, la traccia in coda viene saltata invece di essere mixata.
+                    </description>
+                </option>
+            </row>
+        </group>
+        <group label="Filtri ed effetti">
+            <row orientation="vertical">
+                <option
+                    variable="filterFxIntensity"
+                    type="real"
+                    precision="2"
+                    min="0.0"
+                    max="1.0"
+                    step="0.05"
+                    default="0.85"
+                    label="Intensità del filtro Moog nel passaggio">
+                    <description>
+                        Quanto si chiude il filtro passa-basso sulle due tracce durante la transizione. 1.0 = massima intensità, 0.0 = filtro disattivato.
+                    </description>
+                </option>
+                <option
+                    variable="filterFxInvert"
+                    type="boolean"
+                    default="false"
+                    label="Inverti la direzione del filtro">
+                    <description>
+                        Se attivo, inverte il verso di apertura/chiusura del filtro Moog sui due deck durante il fade.
+                    </description>
+                </option>
+                <option
+                    variable="echoIntensitySolo"
+                    type="real"
+                    precision="2"
+                    min="0.0"
+                    max="1.0"
+                    step="0.05"
+                    default="0.35"
+                    label="Intensità dell'eco quando una traccia suona da sola">
+                    <description>
+                        Livello del drywet dell'echo (proporzionale al VU meter) applicato quando un solo deck sta suonando, fuori dalle transizioni.
+                    </description>
+                </option>
+                <option
+                    variable="transpose"
+                    type="boolean"
+                    default="true"
+                    label="Trasponi automaticamente la tonalità della traccia in entrata">
+                    <description>
+                        Se attivo, prova ad allineare armonicamente la tonalità della traccia in coda a quella in uscita usando sync_key.
+                    </description>
+                </option>
+                <option
+                    variable="transposeMax"
+                    type="real"
+                    precision="2"
+                    min="0.0"
+                    max="12.0"
+                    step="0.5"
+                    default="1.0"
+                    label="Massimo scarto di tonalità tollerato (semitoni)">
+                    <description>
+                        Se la trasposizione richiesta supera questo valore, la traccia viene saltata (fino al numero massimo di salti consecutivi) invece di essere stonata forzatamente.
+                    </description>
+                </option>
+            </row>
+        </group>
+        <group label="Timing e cue">
+            <row orientation="vertical">
+                <option
+                    variable="exitCue"
+                    type="integer"
+                    min="1"
+                    max="8"
+                    default="4"
+                    label="Numero dell'hotcue usato come trigger di uscita">
+                    <description>
+                        L'hotcue sulla traccia in uscita che segnala allo script il punto in cui avviare la transizione.
+                    </description>
+                </option>
+                <option
+                    variable="preStart"
+                    type="integer"
+                    min="0"
+                    max="256"
+                    default="64"
+                    label="Beat di pre-roll prima dell'hotcue di uscita">
+                    <description>
+                        Quanti beat prima del cue point la traccia in entrata viene posizionata, per dare tempo alla transizione di svilupparsi.
+                    </description>
+                </option>
+            </row>
+        </group>
+    </settings>
     
     <controller id="loopMIDI Port">
         <!-- Script file configuration -->
