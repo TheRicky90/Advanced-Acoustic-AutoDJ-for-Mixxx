@@ -23,7 +23,23 @@ The transition is fully intelligent: it dynamically scales all parameters in rea
 🆕 Advanced Bass Logic: Introducing the "Aggressive Bass Swapping" algorithm. It triggers right before the fader center point, sharply cutting the outgoing track's low-end to prevent a muddy mix.
 
 
-🌟 Core FeaturesEqual Power Acoustic Crossfade: EQ attenuation follows precise logarithmic and trigonometric curves (Math.cos / Math.sin), preventing abrupt volume drops or audio clutter.Aggressive & Impactful Bass Swapping: The incoming track's bass activates early (at 35% of the transition), while the outgoing track's bass is sharply cut after the 50% mark, keeping the kick drum consistently defined.Dynamic Reverb Proximity: The incoming track starts immersed in a vast virtual space (55% Dry/Wet, 75% Room Size). As the fader advances, the room size shrinks down to zero, bringing the track "closer" to the listener.Time-Dilating Echo Outro: The outgoing track triggers an echo tail starting at 60% of the mix. The echo time dynamically dilates (from 1/8 to a full 1 beat) with increasing feedback for a spacious, professional outro.Liquid Moog Filter Sweep: Both decks undergo mirrored Low-Pass filtering. An automated resonance "bump" peaks exactly at the center (50%) to emulate high-end analog mixer behavior.Total Automation Freedom: All parameters reset and return to manual hardware control the exact millisecond the transition finishes.BPM Meeting Point: At the start of each transition, both tracks match the actual average BPM before the fade becomes audible. The tempo stays locked for the entire duration of the mix—no skips, no mid-transition adjustments.
+🌟 Core FeaturesEqual Power Acoustic Crossfade: 
+
+EQ attenuation follows precise logarithmic and trigonometric curves (Math.cos / Math.sin), preventing abrupt volume drops or audio clutter.
+
+Aggressive & Impactful Bass Swapping: The incoming track's bass activates early (at 35% of the transition), while the outgoing track's bass is sharply cut after the 50% mark, keeping the kick drum consistently defined.
+
+Dynamic Reverb Proximity: The incoming track starts immersed in a vast virtual space (55% Dry/Wet, 75% Room Size). As the fader advances, the room size shrinks down to zero, bringing the track "closer" to the listener.
+
+Time-Dilating Echo Outro: The outgoing track triggers an echo tail starting at 60% of the mix. The echo time dynamically dilates (from 1/8 to a full 1 beat) with increasing feedback for a spacious, professional outro.
+
+Liquid Moog Filter Sweep: Both decks undergo mirrored Low-Pass filtering. 
+
+An automated resonance "bump" peaks exactly at the center (50%) to emulate high-end analog mixer behavior.Total Automation Freedom: All parameters reset and return to manual hardware control the exact millisecond the transition finishes.
+
+BPM Meeting Point: At the start of each transition, both tracks match the actual average BPM before the fade becomes audible. 
+The tempo stays locked for the entire duration of the mix—no skips, no mid-transition adjustments.
+
 
 🚀 Installation & Setup (Windows)Since Windows does not natively support virtual MIDI routing, a loopback driver is required.Install a Virtual MIDI Cable: Download and install loopMIDI (free software). 
 Open loopMIDI and create a new port named MixxxLoop. Keep loopMIDI running in the background.Copy the Script to Mixxx: Copy the AutoDJ.js  and xml file.
